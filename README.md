@@ -52,6 +52,7 @@ search:
 - **Bypass rate limits** by switching between multiple engines.
 - **Extract data from different sources** in a single request.
 - **Customize the scraping process** with different query parameters.
+- **Proxy Support for IP Rotation** Easily integrate with Tor, paid or free proxies for IP rotation
 
 
 ---
