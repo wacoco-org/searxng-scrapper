@@ -1,6 +1,6 @@
 # SearXNG 
 
-![image](https://github.com/user-attachments/assets/d61fb1c1-5531-4be9-bc83-5641f0e61104)
+![image](https://github.com/user-attachments/assets/bd16bf31-2855-4528-b265-c193540f2f91)
 
 ## What is it?
 
@@ -10,7 +10,7 @@ SearXNG does **not track user data, show ads, or personalize search results**.It
 and configured to scrape various search engines while bypassing tracking and filtering mechanisms.
 
 ---
-![image](https://github.com/user-attachments/assets/894da13f-a716-4a15-81d2-d93621883fb3)
+![image](https://github.com/user-attachments/assets/01a36261-340e-4b9b-89d5-e1660644efda)
 
 
 ---
@@ -122,7 +122,7 @@ GET http://localhost:8081/api/v0/search?keyword=java&narrowing=github.com
 ```
 now the search result will only contain github domain
 
-![image](https://github.com/user-attachments/assets/24898309-5514-41f8-b132-713f2c0c108e)
+![image](https://github.com/user-attachments/assets/ce603e18-2ef4-466c-bc02-d967af2383c9)
 
 when using the api. response looks like this
 
