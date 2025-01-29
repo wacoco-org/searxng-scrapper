@@ -72,7 +72,7 @@ This would **reduce the chance of getting blocked** and could, in theory, allow 
 SearXNG **does not rotate IPs by default**, meaning all requests come from the same server.
 Search engines **track IPs and can block your requests** if you scrape too aggressively.
 
-I personly tested searching over 250 keywords and got total 3 732 url links using same ip, and I have not encountered any problem.
+I personally tested searching over 300 keywords and got total 4 813 url links using same ip, and I have not encountered any problem.
 
 so **there are 3 ways to Rotate IP Addresses in SearXNG**
 
