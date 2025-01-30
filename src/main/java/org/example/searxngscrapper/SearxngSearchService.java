@@ -19,7 +19,7 @@ public class SearxngSearchService {
     private final WebClient webClient;
 
     public SearxngSearchService(WebClient.Builder webClientBuilder) {
-        this.webClient = webClientBuilder.baseUrl("http://localhost:8080").build();
+        this.webClient = webClientBuilder.baseUrl("http://13.61.152.91:8080").build();
     }
 
     public Mono<List<SearchResult>> fetchSearchResults(String keyword, String narrowing) {
@@ -34,20 +34,20 @@ public class SearxngSearchService {
                         .flatMap(List::stream)
                         .distinct()
                         .collect(Collectors.toList())) // Combine results
-                .doOnSuccess(results -> logger.info("✅ Total results fetched: {}", results.size()))
-                .doOnError(error -> logger.error("❌ Error fetching search results: {}", error.getMessage(), error));
+                .doOnSuccess(results -> logger.info("Total results fetched: {}", results.size()))
+                .doOnError(error -> logger.error("Error fetching search results: {}", error.getMessage(), error));
     }
 
     private Mono<List<SearchResult>> fetchPageResults(String query, int page) {
-        String BASE_SEARCH_URL = "http://localhost:8080/search?q=%s&categories=general&language=auto&time_range=&safesearch=0&theme=simple&pageno=%d";
+        String BASE_SEARCH_URL = "http://13.61.152.91:8080/search?q=%s&categories=general&language=auto&time_range=&safesearch=0&theme=simple&pageno=%d";
         String requestUrl = String.format(BASE_SEARCH_URL, query, page);
-        logger.info("🌍 Fetching search results from URL (Page {}): {}", page, requestUrl);
+        logger.info("Fetching search results from URL (Page {}): {}", page, requestUrl);
 
         return webClient.get()
                 .uri(requestUrl)
                 .retrieve()
                 .bodyToMono(String.class)
-                .doOnNext(html -> logger.debug("📥 Received HTML response (Page {}): {}...", page, html.substring(0, Math.min(500, html.length()))))
+                .doOnNext(html -> logger.debug("Received HTML response (Page {}): {}...", page, html.substring(0, Math.min(500, html.length()))))
                 .map(html -> parseHtmlResults(html, page))
                 .doOnSuccess(results -> {
                     logger.info("Page {} results count: {}", page, results.size());
@@ -60,7 +60,7 @@ public class SearxngSearchService {
                         System.out.println("------------------------------------------------");
                     });
                 })
-                .doOnError(error -> logger.error("❌ Error fetching page {}: {}", page, error.getMessage(), error));
+                .doOnError(error -> logger.error("Error fetching page {}: {}", page, error.getMessage(), error));
     }
 
     private List<SearchResult> parseHtmlResults(String html, int page) {
@@ -79,12 +79,12 @@ public class SearxngSearchService {
                 String description = article.select("p.content").text();
                 List<String> searchEngines = article.select(".engines span").eachText();
 
-                logger.debug("✅ Extracted result - Page: {}, Title: {}, URL: {}, Engines: {}", page, title, url, searchEngines);
+                logger.debug("Extracted result - Page: {}, Title: {}, URL: {}, Engines: {}", page, title, url, searchEngines);
                 return new SearchResult(title, url, description, searchEngines, page);
             }).collect(Collectors.toList());
 
         } catch (Exception e) {
-            logger.error("❌ Error parsing HTML on page {}: {}", page, e.getMessage(), e);
+            logger.error("Error parsing HTML on page {}: {}", page, e.getMessage(), e);
             throw new RuntimeException("Error parsing search results", e);
         }
     }
