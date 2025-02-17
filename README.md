@@ -175,11 +175,11 @@ This table is detailed Breakdown on SearXNG Query  that exist in the code.
 more about searxng source code 
 
 
-* for docker
+* setup searxng localy using docker, fallowup this link below
 
  https://github.com/searxng/searxng-docker
 
-* source repo
+* original searxng source repo
 
 https://github.com/searxng/searxng
 
