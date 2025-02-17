@@ -12,6 +12,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
 @Service
 public class SearxngSearchService {
 
@@ -19,7 +20,7 @@ public class SearxngSearchService {
     private final WebClient webClient;
 
     public SearxngSearchService(WebClient.Builder webClientBuilder) {
-        this.webClient = webClientBuilder.baseUrl("http://13.61.152.91:8080").build();
+        this.webClient = webClientBuilder.baseUrl("http://localhost:8080").build();
     }
 
     public Mono<List<SearchResult>> fetchSearchResults(String keyword, String narrowing) {
@@ -39,7 +40,7 @@ public class SearxngSearchService {
     }
 
     private Mono<List<SearchResult>> fetchPageResults(String query, int page) {
-        String BASE_SEARCH_URL = "http://13.61.152.91:8080/search?q=%s&categories=general&language=auto&time_range=&safesearch=0&theme=simple&pageno=%d";
+        String BASE_SEARCH_URL = "http://localhost:8080/search?q=%s&categories=general&language=auto&time_range=&safesearch=0&theme=simple&pageno=%d";
         String requestUrl = String.format(BASE_SEARCH_URL, query, page);
         logger.info("Fetching search results from URL (Page {}): {}", page, requestUrl);
 
