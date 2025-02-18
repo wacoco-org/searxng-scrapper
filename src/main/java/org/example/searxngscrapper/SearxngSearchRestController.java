@@ -20,8 +20,8 @@ public class SearxngSearchRestController {
 
     @GetMapping("/search")
     public Mono<List<SearxngSearchService.SearchResult>> search(
-            @RequestParam String keyword,
-            @RequestParam(required = false) String narrowing) {
+            @RequestParam("keyword") String keyword,
+            @RequestParam(name = "narrowing", required = false) String narrowing) {
         return searxngSearchService.fetchSearchResults(keyword, narrowing);
     }
 

@@ -10,6 +10,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.net.URI;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,19 +29,58 @@ public class SearxngSearchService {
                 ? String.format("site:%s %s", narrowing, keyword)
                 : keyword;
 
-        return Flux.range(1, 3) // Get first 3 pages
-                .flatMap(page -> fetchPageResults(query, page)) // Fetch results per page
+        return Flux.range(1, 6)  // Pages 1 to 6
+                .flatMap(page -> fetchPageResults(query, page))
                 .collectList()
                 .map(results -> results.stream()
                         .flatMap(List::stream)
                         .distinct()
-                        .collect(Collectors.toList())) // Combine results
+                        .filter(result -> {
+                            if (narrowing != null && !narrowing.isBlank()) {
+                                try {
+                                    URI uri = URI.create(result.url());
+                                    String host = uri.getHost();
+                                    return host != null &&
+                                            (host.equalsIgnoreCase(narrowing) || host.endsWith("." + narrowing));
+                                } catch (Exception e) {
+                                    logger.error("Error parsing URL {}: {}", result.url(), e.getMessage());
+                                    return false;
+                                }
+                            }
+                            return true;
+                        })
+                        .map(result -> {
+                            if (narrowing != null && !narrowing.isBlank()) {
+                                try {
+                                    URI uri = URI.create(result.url());
+                                    String host = uri.getHost();
+                                    if (host != null &&
+                                            !host.equalsIgnoreCase(narrowing) &&
+                                            host.endsWith(narrowing)) {
+                                        URI newUri = new URI(
+                                                uri.getScheme(),
+                                                uri.getUserInfo(),
+                                                narrowing,
+                                                uri.getPort(),
+                                                uri.getPath(),
+                                                uri.getQuery(),
+                                                uri.getFragment());
+                                        return new SearchResult(result.title(), newUri.toString(), result.description(), result.engines(), result.page());
+                                    }
+                                } catch (Exception e) {
+                                    logger.error("Error transforming URL {}: {}", result.url(), e.getMessage());
+                                }
+                            }
+                            return result;
+                        })
+                        .collect(Collectors.toList()))
                 .doOnSuccess(results -> logger.info("Total results fetched: {}", results.size()))
                 .doOnError(error -> logger.error("Error fetching search results: {}", error.getMessage(), error));
     }
 
     private Mono<List<SearchResult>> fetchPageResults(String query, int page) {
-        String BASE_SEARCH_URL = "http://13.61.152.91:8080/search?q=%s&categories=general&language=auto&time_range=&safesearch=0&theme=simple&pageno=%d";
+        String BASE_SEARCH_URL =
+                "http://13.61.152.91:8080/search?q=%s&categories=general&language=en&time_range=&safesearch=0&theme=simple&pageno=%d";
         String requestUrl = String.format(BASE_SEARCH_URL, query, page);
         logger.info("Fetching search results from URL (Page {}): {}", page, requestUrl);
 
@@ -48,17 +88,18 @@ public class SearxngSearchService {
                 .uri(requestUrl)
                 .retrieve()
                 .bodyToMono(String.class)
-                .doOnNext(html -> logger.debug("Received HTML response (Page {}): {}...", page, html.substring(0, Math.min(500, html.length()))))
+                .doOnNext(html -> logger.debug("Received HTML response (Page {}): {}...", page,
+                        html.substring(0, Math.min(500, html.length()))))
                 .map(html -> parseHtmlResults(html, page))
                 .doOnSuccess(results -> {
                     logger.info("Page {} results count: {}", page, results.size());
                     results.forEach(result -> {
-                        System.out.println("Link: " + result.url());
-                        System.out.println("Title: " + result.title());
-                        System.out.println("Description: " + result.description());
-                        System.out.println("Search Engine(s): " + String.join(", ", result.engines()));
-                        System.out.println("Found on Page: " + result.page());
-                        System.out.println("------------------------------------------------");
+                        logger.info("Link: {}", result.url());
+                        logger.info("Title: {}", result.title());
+                        logger.info("Description: {}", result.description());
+                        logger.info("Search Engine(s): {}", String.join(", ", result.engines()));
+                        logger.info("Found on Page: {}", result.page());
+                        logger.info("------------------------------------------------");
                     });
                 })
                 .doOnError(error -> logger.error("Error fetching page {}: {}", page, error.getMessage(), error));
@@ -75,16 +116,17 @@ public class SearxngSearchService {
                 logger.warn("No search results found on page {}!", page);
             }
 
-            return articles.stream().map(article -> {
-                String title = article.select("h3 a").text();
-                String url = article.select("a.url_header").attr("href");
-                String description = article.select("p.content").text();
-                List<String> searchEngines = article.select(".engines span").eachText();
+            return articles.stream()
+                    .map(article -> {
+                        String title = article.select("h3 a").text();
+                        String url = article.select("a.url_header").attr("href");
+                        String description = article.select("p.content").text();
+                        List<String> searchEngines = article.select(".engines span").eachText();
 
-                logger.debug("Extracted result - Page: {}, Title: {}, URL: {}, Engines: {}", page, title, url, searchEngines);
-                return new SearchResult(title, url, description, searchEngines, page);
-            }).collect(Collectors.toList());
-
+                        logger.debug("Extracted result - Page: {}, Title: {}, URL: {}, Engines: {}",
+                                page, title, url, searchEngines);
+                        return new SearchResult(title, url, description, searchEngines, page);
+                    }).collect(Collectors.toList());
         } catch (Exception e) {
             logger.error("Error parsing HTML on page {}: {}", page, e.getMessage(), e);
             throw new RuntimeException("Error parsing search results", e);
@@ -92,6 +134,4 @@ public class SearxngSearchService {
     }
 
     public record SearchResult(String title, String url, String description, List<String> engines, int page) {}
-
 }
-
