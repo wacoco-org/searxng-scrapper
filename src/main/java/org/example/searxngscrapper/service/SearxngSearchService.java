@@ -1,5 +1,7 @@
-package org.example.searxngscrapper;
+package org.example.searxngscrapper.service;
 
+import org.example.searxngscrapper.error.ErrorType;
+import org.example.searxngscrapper.error.ScraperException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -64,10 +66,10 @@ public class SearxngSearchService {
             }
         } catch (Exception e) {
             logger.error("Error adding narrowing on URL {}: {}", result.url(), e.getMessage());
+            throw new ScraperException(ErrorType.NARROWING_ERROR, "Error applying narrowing", e);
         }
         return result;
     }
-
 
     private Mono<List<SearchResult>> fetchPageResults(String query, int page) {
         String requestUrl = String.format(BASE_SEARCH_URL, query, page);
@@ -91,7 +93,10 @@ public class SearxngSearchService {
                         logger.info("------------------------------------------------");
                     });
                 })
-                .doOnError(error -> logger.error("Error fetching page {}: {}", page, error.getMessage(), error));
+                .doOnError(error -> {
+                    logger.error("Error fetching page {}: {}", page, error.getMessage(), error);
+                })
+                .onErrorMap(e -> new ScraperException(ErrorType.FETCH_PAGE_ERROR, "Error fetching page " + page, e));
     }
 
     private List<SearchResult> parseHtmlResults(String html, int page) {
@@ -104,7 +109,7 @@ public class SearxngSearchService {
             for (Element row : rows) {
                 String engineName = row.select(".engine-name").text();
                 String statusOrTime = Objects.requireNonNull(row.select("td").last()).text();
-                logger.info("Response Time {}", engineName + " : " + statusOrTime);
+                logger.info("Response Time {} : {}", engineName, statusOrTime);
             }
 
             if (articles.isEmpty()) {
@@ -125,10 +130,11 @@ public class SearxngSearchService {
                     .collect(Collectors.toList());
         } catch (Exception e) {
             logger.error("Error parsing HTML on page {}: {}", page, e.getMessage(), e);
-            throw new RuntimeException("Error parsing search results", e);
+            throw new ScraperException(ErrorType.PARSE_ERROR, "Error parsing HTML on page " + page, e);
         }
     }
 
     public record SearchResult(String title, String url, String description, List<String> engines, int page) {}
+
 }
 
